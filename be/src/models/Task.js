@@ -9,7 +9,7 @@ const taskSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["active", "completed"],
+      enum: ["active", "complete"],
       default: "active",
     },
     completedAt: {
@@ -17,7 +17,9 @@ const taskSchema = new mongoose.Schema(
       default: null,
     },
   },
-  { timestamps: true }
+  {
+    timestamps: true, // createdAt và updatedAt tự động thêm vào
+  }
 );
 
 const Task = mongoose.model("Task", taskSchema);

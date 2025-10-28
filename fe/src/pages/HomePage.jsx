@@ -17,6 +17,7 @@ const HomePage = () => {
   const [filter, setFilter] = useState("all");
   const [dateQuery, setDateQuery] = useState("today");
   const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchTasks();
@@ -29,13 +30,29 @@ const HomePage = () => {
   // logic
   const fetchTasks = async () => {
     try {
+      setLoading(true);
       const res = await api.get(`/tasks?filter=${dateQuery}`);
-      setTaskBuffer(res.data.tasks);
-      setActiveTaskCount(res.data.activeCount);
-      setCompleteTaskCount(res.data.completeCount);
+
+      if (res.data && Array.isArray(res.data.tasks)) {
+        setTaskBuffer(res.data.tasks);
+        setActiveTaskCount(res.data.activeCount || 0);
+        setCompleteTaskCount(res.data.completeCount || 0);
+      } else {
+        setTaskBuffer([]);
+        setActiveTaskCount(0);
+        setCompleteTaskCount(0);
+        toast.error("Dữ liệu không đúng định dạng.");
+      }
     } catch (error) {
       console.error("Lỗi xảy ra khi truy xuất tasks:", error);
-      toast.error("Lỗi xảy ra khi truy xuất tasks.");
+      toast.error("Không thể kết nối đến server. Vui lòng kiểm tra backend.");
+
+      // Set giá trị mặc định khi lỗi
+      setTaskBuffer([]);
+      setActiveTaskCount(0);
+      setCompleteTaskCount(0);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -76,11 +93,23 @@ const HomePage = () => {
     page * visibleTaskLimit
   );
 
-  if (visibleTasks.length === 0) {
-    handlePrev();
-  }
+  // Fix: Chuyển logic này vào useEffect
+  useEffect(() => {
+    if (visibleTasks.length === 0 && page > 1) {
+      setPage((prev) => prev - 1);
+    }
+  }, [visibleTasks.length, page]);
 
   const totalPages = Math.ceil(filteredTasks.length / visibleTaskLimit);
+
+  // Hiển thị loading
+  if (loading) {
+    return (
+      <div className="min-h-screen w-full bg-[#fefcff] flex items-center justify-center">
+        <p className="text-lg">Đang tải...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen w-full bg-[#fefcff] relative">
